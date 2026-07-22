@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Coding Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1e1e1e; color: #fff; margin: 0; padding: 20px; }
+        .chat-container { max-width: 700px; margin: auto; background: #2d2d2d; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .chat-box { height: 400px; overflow-y: auto; border: 1px solid #444; padding: 10px; margin-bottom: 15px; border-radius: 5px; background: #1e1e1e; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 8px; max-width: 80%; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; }
+        .user { background: #007bff; align-self: flex-end; }
+        .bot { background: #3b3b3b; align-self: flex-start; position: relative; }
+        .input-group { display: flex; gap: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #444; border-radius: 5px; background: #1e1e1e; color: #fff; font-size: 16px; }
+        button { padding: 12px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        .copy-btn { background: #444; color: #fff; border: none; padding: 5px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; margin-top: 8px; display: block; }
+        .copy-btn:hover { background: #555; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h2>💻 AI Web Coding Assistant</h2>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="input-group">
+        <input type="text" id="userInput" placeholder="Kuch bhi code maango (jaise: HTML game)..." onkeypress="checkEnter(event)">
+        <button onclick="sendMessage()">Bhejo</button>
+    </div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const inputField = document.getElementById("userInput");
+        const chatBox = document.getElementById("chatBox");
+        const messageText = inputField.value.trim();
+
+        if (!messageText) return;
+
+        chatBox.innerHTML += `<div class="message user">${escapeHtml(messageText)}</div>`;
+        inputField.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const loadingId = "loading_" + Date.now();
+        chatBox.innerHTML += `<div class="message bot" id="${loadingId}">AI soch raha hai...</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: messageText })
+            });
+
+            const data = await response.json();
+            const botMessageDiv = document.getElementById(loadingId);
+            
+            botMessageDiv.innerHTML = escapeHtml(data.reply);
+            
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "copy-btn";
+            copyBtn.innerText = "📋 Copy Code";
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(data.reply);
+                copyBtn.innerText = "Copied! ✅";
+                setTimeout(() => copyBtn.innerText = "📋 Copy Code", 2000);
+            };
+            botMessageDiv.appendChild(copyBtn);
+
+        } catch (error) {
+            document.getElementById(loadingId).innerText = "Error: Server se connect nahi ho paya.";
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function checkEnter(e) {
+        if (e.key === "Enter") sendMessage();
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+</script>
+
+</body>
+</html>
